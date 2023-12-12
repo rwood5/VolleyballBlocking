@@ -1,11 +1,12 @@
-def get_random_forest_features(filename):
+def get_random_forest_features(dataframe):
     # Imports
     from sklearn.ensemble import RandomForestClassifier
-
+    from sklearn.preprocessing import OneHotEncoder
+    
     # PART 1: PREPARE DATASET
 
     # Load dataframe
-    vball = pd.read_csv("Volleyball.csv", header=3)
+    vball = dataframe
 
     # Format target column "SET_REGION" and drop rows with missing targets
     def rename_targets(row):
@@ -77,7 +78,13 @@ def get_random_forest_features(filename):
     vball = vball.sample(frac=1)
 
     # 1-Hot Encode Categorical variables
-    vball = pd.get_dummies(vball, drop_first=True, columns=["BYU_FL_Position", "BYU_FM_Position", "BYU_FR_Position", "BYU_BR_Position", "BYU_BM_Position", "BYU_BL_Position", "OPP_FL_Position", "OPP_FM_Position", "OPP_FR_Position", "OPP_BR_Position", "OPP_BM_Position", "OPP_BL_Position", "OPP_BLOCKED_BYU_LAST_POINT", "SET_POINT", "IS_POINT_AFTER_TIMEOUT_OR_FIRST_POINT_OF_SET", "SET_REGION_1_BEFORE", "SET_REGION_2_BEFORE", "SET_REGION_3_BEFORE", "LeftBlockerTaller", "MiddleBlockerTaller", "RightBlockerTaller"])
+    categorical_cols = ["BYU_FL_Position", "BYU_FM_Position", "BYU_FR_Position", "BYU_BR_Position", "BYU_BM_Position", "BYU_BL_Position", "OPP_FL_Position", "OPP_FM_Position", "OPP_FR_Position", "OPP_BR_Position", "OPP_BM_Position", "OPP_BL_Position", "OPP_BLOCKED_BYU_LAST_POINT", "SET_POINT", "IS_POINT_AFTER_TIMEOUT_OR_FIRST_POINT_OF_SET", "SET_REGION_1_BEFORE", "SET_REGION_2_BEFORE", "SET_REGION_3_BEFORE", "LeftBlockerTaller", "MiddleBlockerTaller", "RightBlockerTaller"]
+    enc = pickle.load(open("one_hot_encoder.pkl", "rb"))
+    one_hot = enc.transform(vball[categorical_cols]).toarray()
+    onehot_df = pd.DataFrame(one_hot, columns=enc.get_feature_names_out(categorical_cols))
+    numerical = vball.drop(columns=categorical_cols, axis=1)
+    onehot_df.index = numerical.index
+    vball = pd.concat([numerical, onehot_df], axis=1)
 
     # Split into features and targets
     X = vball.drop(labels=["SET_REGION"], axis=1)
@@ -91,5 +98,5 @@ def get_random_forest_features(filename):
      'BYU_SCORE', 'OPP_SCORE', 'SET_REGION_2_BEFORE_0.0',
      'SET_REGION_3_BEFORE_2.0']
     X_reduced = X.loc[:, subset]
-
+    
     return X_reduced
